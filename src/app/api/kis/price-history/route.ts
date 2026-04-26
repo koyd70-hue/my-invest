@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Market, KisMonthPriceResult } from '@/types';
 import { KisDailyPriceResponse } from '@/lib/kis/types';
 import { parseKisPrice, lastDayOfMonth } from '@/lib/calculations';
-import { getKisAccessToken } from '@/app/api/kis/token/route';
+import { getKisAccessToken } from '@/lib/kis/token';
 
 const KIS_BASE = 'https://openapi.koreainvestment.com:9443';
 
-function marketCode(market: Market): string {
-  return market === 'ETF' ? 'ETF' : 'J';
+function marketCode(_market: Market): string {
+  return 'J'; // FHKST01010400은 KOSPI/KOSDAQ/ETF 모두 'J' 사용
 }
 
 async function fetchMonthEndPrice(
@@ -46,10 +46,11 @@ async function fetchMonthEndPrice(
     if (!res.ok) return { month, price: null };
 
     const data: KisDailyPriceResponse = await res.json();
-    if (data.rt_cd !== '0' || !data.output2?.length) return { month, price: null };
+    // KIS API는 output (배열) 키로 반환
+    const rows2 = (data.output2 ?? data.output ?? []) as KisDailyPriceResponse['output2'];
+    if (data.rt_cd !== '0' || !rows2?.length) return { month, price: null };
 
-    // output2는 최신순 정렬 — 해당 월 안의 마지막 거래일 종가 사용
-    const rows = data.output2.filter((r) => r.stck_bsop_date <= endDate);
+    const rows = rows2.filter((r) => r.stck_bsop_date <= endDate);
     if (rows.length === 0) return { month, price: null };
 
     const price = parseKisPrice(rows[0].stck_clpr);

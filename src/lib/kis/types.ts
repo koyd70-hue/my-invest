@@ -23,7 +23,8 @@ export interface KisPriceResponse {
 }
 
 export interface KisDailyPriceResponse {
-  output2: KisDailyPriceRow[];
+  output2?: KisDailyPriceRow[];  // 일부 응답은 output2
+  output?: KisDailyPriceRow[];   // 실제 KIS API는 output 키 반환
   rt_cd: string;
   msg_cd: string;
   msg1: string;

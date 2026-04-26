@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Market } from '@/types';
 import { KisPriceResponse } from '@/lib/kis/types';
 import { parseKisPrice } from '@/lib/calculations';
-import { getKisAccessToken } from '@/app/api/kis/token/route';
+import { getKisAccessToken } from '@/lib/kis/token';
 import { format } from 'date-fns';
 
 const KIS_BASE = 'https://openapi.koreainvestment.com:9443';
 
-function marketCode(market: Market): string {
-  return market === 'ETF' ? 'ETF' : 'J';
+function marketCode(_market: Market): string {
+  return 'J'; // FHKST01010100은 KOSPI/KOSDAQ/ETF 모두 'J' 사용
 }
 
 export async function POST(req: NextRequest) {
@@ -37,11 +37,14 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) {
+      const errText = await res.text();
+      console.error('[kis/price] HTTP 오류:', res.status, errText);
       return NextResponse.json({ price: null, date: format(new Date(), 'yyyyMMdd') });
     }
 
     const data: KisPriceResponse = await res.json();
     if (data.rt_cd !== '0') {
+      console.error('[kis/price] API 오류:', data.msg_cd, data.msg1);
       return NextResponse.json({ price: null, date: format(new Date(), 'yyyyMMdd') });
     }
 

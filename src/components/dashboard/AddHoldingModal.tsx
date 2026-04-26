@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { searchStocks } from '@/lib/krx/client';
-import { getKisPriceHistory } from '@/lib/kis/client';
+import { searchKisStocks, getKisPriceHistory } from '@/lib/kis/client';
 import { addHolding } from '@/lib/firebase/firestore';
 import { StockSearchResult } from '@/types';
 import { format } from 'date-fns';
@@ -36,7 +35,7 @@ export default function AddHoldingModal({ uid, onClose }: Props) {
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const data = await searchStocks(query.trim());
+        const data = await searchKisStocks(query.trim());
         setResults(data);
       } catch {
         setResults([]);
