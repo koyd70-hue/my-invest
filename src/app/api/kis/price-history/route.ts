@@ -6,8 +6,8 @@ import { getKisAccessToken } from '@/lib/kis/token';
 
 const KIS_BASE = 'https://openapi.koreainvestment.com:9443';
 
-function marketCode(market: Market): string {
-  return market === 'ETF' ? 'ETF' : 'J';
+function marketCode(_market: Market): string {
+  return 'J';
 }
 
 async function fetchMonthEndPrice(

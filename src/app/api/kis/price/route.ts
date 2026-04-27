@@ -11,9 +11,8 @@ const KIS_BASE = 'https://openapi.koreainvestment.com:9443';
 const TOKEN_ERROR_CODES = new Set(['EGW00121', 'EGW00123', 'EGW00201']);
 
 async function fetchPrice(isuSrtCd: string, market: Market, token: string) {
-  // FHKST01010100은 KOSPI/KOSDAQ/ETF 모두 'J' 사용
   const params = new URLSearchParams({
-    FID_COND_MRKT_DIV_CODE: market === 'ETF' ? 'ETF' : 'J',
+    FID_COND_MRKT_DIV_CODE: 'J',
     FID_INPUT_ISCD: isuSrtCd,
   });
 
