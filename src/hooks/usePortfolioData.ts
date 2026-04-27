@@ -6,6 +6,26 @@ import { getKisPrice } from '@/lib/kis/client';
 import { enrichHolding, calcPortfolioSummary } from '@/lib/calculations';
 import { format } from 'date-fns';
 
+const PRICE_CACHE_KEY = 'portfolio-price-cache';
+
+type PriceCacheEntry = { price: number; date: string };
+
+function loadPriceCache(): Map<string, PriceCacheEntry> {
+  try {
+    const raw = localStorage.getItem(PRICE_CACHE_KEY);
+    if (!raw) return new Map();
+    return new Map(JSON.parse(raw) as [string, PriceCacheEntry][]);
+  } catch {
+    return new Map();
+  }
+}
+
+function savePriceCache(map: Map<string, PriceCacheEntry>) {
+  try {
+    localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify(Array.from(map.entries())));
+  } catch {}
+}
+
 function todayStr(): string {
   return format(new Date(), 'yyyyMMdd');
 }
@@ -16,6 +36,9 @@ export function usePortfolioData(holdings: Holding[]) {
   const [loadingPrices, setLoadingPrices] = useState(false);
   const [priceDate, setPriceDate] = useState<string | null>(null);
   const prevFetchKey = useRef<string>('');
+  const priceCache = useRef<Map<string, PriceCacheEntry>>(
+    typeof window !== 'undefined' ? loadPriceCache() : new Map()
+  );
 
   useEffect(() => {
     const ids = holdings.map((h) => h.id).join(',');
@@ -50,10 +73,21 @@ export function usePortfolioData(holdings: Holding[]) {
         }
       })
     ).then((results) => {
-      const priceMap = new Map(results.map((r) => [r.key, r.price]));
+      // 성공한 결과를 캐시에 저장
+      for (const r of results) {
+        if (r.price !== null && r.date !== null) {
+          priceCache.current.set(r.key, { price: r.price, date: r.date });
+        }
+      }
+      savePriceCache(priceCache.current);
+
+      // 실패한 종목은 캐시에서 직전 가격으로 fallback
+      const priceMap = new Map<string, number | null>(
+        results.map((r) => [r.key, r.price ?? priceCache.current.get(r.key)?.price ?? null])
+      );
+
       const enrichedList = holdings.map((h) => {
         if (h.sellDate) {
-          // 매도 완료: currentPrice null, enrichHolding이 sellPrice 사용
           return enrichHolding(h, null);
         }
         const key = `${h.market}:${h.isuSrtCd}`;
@@ -61,11 +95,19 @@ export function usePortfolioData(holdings: Holding[]) {
         return enrichHolding(h, price);
       });
 
-      const latestDate = results
-        .map((r) => r.date)
-        .filter((d): d is string => d !== null)
-        .sort()
-        .at(-1) ?? null;
+      // 날짜도 실패 시 캐시에서 fallback
+      const latestDate =
+        results
+          .map((r) => r.date)
+          .filter((d): d is string => d !== null)
+          .sort()
+          .at(-1) ??
+        results
+          .map((r) => priceCache.current.get(r.key)?.date)
+          .filter((d): d is string => d !== undefined)
+          .sort()
+          .at(-1) ??
+        null;
 
       setEnriched(enrichedList);
       setSummary(calcPortfolioSummary(enrichedList));
