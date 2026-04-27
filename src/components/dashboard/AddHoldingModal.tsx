@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { searchKisStocks, getKisPriceHistory } from '@/lib/kis/client';
+import { searchStocks, getKrxPriceHistory } from '@/lib/krx/client';
 import { addHolding } from '@/lib/firebase/firestore';
 import { StockSearchResult } from '@/types';
 import { format } from 'date-fns';
@@ -35,7 +35,7 @@ export default function AddHoldingModal({ uid, onClose }: Props) {
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const data = await searchKisStocks(query.trim());
+        const data = await searchStocks(query.trim());
         setResults(data);
       } catch {
         setResults([]);
@@ -49,7 +49,7 @@ export default function AddHoldingModal({ uid, onClose }: Props) {
   useEffect(() => {
     if (!selected || !purchaseDate) return;
     const month = purchaseDate.replace(/-/g, '').slice(0, 6);
-    getKisPriceHistory(selected.isuSrtCd, selected.market, [month])
+    getKrxPriceHistory(selected.isuSrtCd, selected.market, [month])
       .then((results) => {
         const r = results[0];
         if (r?.price !== null && r?.price !== undefined) {
@@ -190,7 +190,7 @@ export default function AddHoldingModal({ uid, onClose }: Props) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               매수 단가 (원)
-              <span className="text-xs text-gray-400 ml-1.5 font-normal">해당 월 KIS 종가 자동입력</span>
+              <span className="text-xs text-gray-400 ml-1.5 font-normal">해당 월 KRX 종가 자동입력</span>
             </label>
             <input
               type="number"

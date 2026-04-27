@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { Holding, EnrichedHolding, MonthlyRow } from '@/types';
 import { generateMonthRange, calcMonthlyRow, lastDayOfMonth } from '@/lib/calculations';
 import { formatKRW, formatRate } from '@/lib/calculations';
-import { getKisPriceHistory } from '@/lib/kis/client';
+import { getKrxPriceHistory } from '@/lib/krx/client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface Props {
@@ -50,7 +50,7 @@ export default function MonthlyHistoryTable({ holdings, enriched, priceDate }: P
       Array.from(uniqueMap.entries()).map(async ([key, { isuSrtCd, market }]) => {
         try {
           const results = pastMonths.length > 0
-            ? await getKisPriceHistory(isuSrtCd, market, pastMonths)
+            ? await getKrxPriceHistory(isuSrtCd, market, pastMonths)
             : [];
           for (const h of holdings) {
             if (`${h.market}:${h.isuSrtCd}` === key) {
